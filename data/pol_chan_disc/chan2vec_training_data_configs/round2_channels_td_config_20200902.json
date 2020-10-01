@@ -1,0 +1,11 @@
+{
+    "commenters_fp_list" : ["data/pol_chan_disc/commenter_need_sub_scrap/initial_channels_20200827_top10_video_all_commenters.txt",
+			    "data/pol_chan_disc/commenter_need_sub_scrap/round1_channels_20200830_top10_video_all_commenters.txt",
+			    "data/pol_chan_disc/commenter_need_sub_scrap/round2_channels_20200902_top10_video_all_commenters.txt"],
+    "commenters_sel_samp_fp_list" : ["data/pol_chan_disc/commenter_need_sub_scrap/initial_channels_20200827_top10_video_samp_commenters.txt",
+				     "data/pol_chan_disc/commenter_need_sub_scrap/round1_channels_20200830_top10_video_samp_commenters.txt",
+				     "data/pol_chan_disc/commenter_need_sub_scrap/round2_channels_20200902_top10_video_samp_commenters.txt"],
+    "commenters_subs_dir" : "data/pol_chan_disc/all_commenter_subs",
+    "commenters_subs_selenium_dir" : "data/pol_chan_disc/all_commenter_subs_selenium",
+    "terminated_channels_fp" : "data/datasets/channels_no_api_data.txt"
+}

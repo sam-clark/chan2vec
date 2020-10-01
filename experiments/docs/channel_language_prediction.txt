@@ -1,0 +1,21 @@
+
+# Generate language predictions
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/youtube_api_default_language_ds_bin.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+# Get language prediction performance
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/datasets/youtube_api_default_language_ds_bin.txt \
+        --score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --no-fold-lab-col True --pred-thresh 0.5
+"""
+Num instances: 16261
+AUC:           0.9368
+Accuracy:      0.8678
+Precision:     0.8586
+Recall:        0.9458
+"""

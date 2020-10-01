@@ -1,0 +1,199 @@
+
+
+#############################
+# ROUND 3 - DATA COLLECTION #
+#############################
+
+# Videos
+python3 data_collection/python/scrape_batch_start.py --scrape-type video_curl_scrape --ec2-setup-script-fp data_collection/sh/ec2_curl_setup.sh \
+        --scrape-ids-fp data/pol_chan_disc/candidate_chans/round3_channels.txt \
+        --num-jobs-per-inst 3 --ec2-ip-fp data_collection/configs/chan_video_scrape_instances.20200903.txt \
+        --work-dir data/pol_chan_disc/candidate_chan_videos_work/round3_chan_vids_20200903 \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_work/round3_chan_vids_20200903/data_loc.txt \
+	--scrape-date 2020-09-03
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/candidate_chan_videos_work/round3_chan_vids_20200903/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_work/round3_chan_vids_20200903/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/candidate_chan_videos_work/round3_chan_vids_20200903 \
+        --comb-fp data/pol_chan_disc/candidate_chan_videos/round3_channels.20200903.videos.txt
+
+
+# Comments
+# Get top 10 most viewed videos from each channel
+python3 data_collection/python/get_top_videos.py \
+        --vid-fp data/pol_chan_disc/candidate_chan_videos/round3_channels.20200903.videos.txt \
+        --out-fp data/pol_chan_disc/candidate_chan_videos_top10/round3_channels.20200903.top10_videos.vid_ids.txt \
+        --most-recent-num 30 --num-keep 10
+# Scrape comments for 30K videos at 200 per instance per hour using 40 instances = 3.75 hours
+python3 data_collection/python/scrape_batch_start.py --scrape-type comment_scrape \
+        --scrape-ids-fp data/pol_chan_disc/candidate_chan_videos_top10/round3_channels.20200903.top10_videos.vid_ids.txt \
+        --num-jobs-per-inst 2 --ec2-ip-fp data_collection/configs/comment_scrape_instances.20200903.txt \
+        --work-dir data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903 \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903/data_loc.txt \
+        --aws-access-id YOUR_ID --aws-secret-key YOUR_SECRET_KEY
+# OPTIONAL - Monitor scrape
+python3 data_collection/python/monitor_scrape.py --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903/data_loc.txt \
+        --col-check 2 --email YOUR_EMAIL_ADDRESS --sub-string comments
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS --sub-string comments
+# Copy (only after receiving emails that the scrape jobs have finished)
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903 \
+        --sub-string comments --comb-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/round3_channels_20200903_top10_video_comments.txt
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/candidate_chan_videos_top10_comments_work/round3_chans_20200903 \
+        --sub-string cat_info --comb-fp data/pol_chan_disc/candidate_chan_videos_top10_cat_info/round3_channels_20200903_top10_video_cat_info.txt
+
+
+# Curl sub scrape
+# Identify commenters that haven't had subs scraped yet
+python3 data_collection/python/get_new_commenter_ids.py \
+        --all-com-subs-dir data/pol_chan_disc/all_commenter_subs \
+        --comments-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/round3_channels_20200903_top10_video_comments.txt \
+        --all-commenter-fp data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_all_commenters.txt \
+        --need-sub-scrape-fp data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_new_commenters.txt
+# Scrape commenter subscriptions
+# (470,000 / 4260) / 30 = 3.7 hours
+python3 data_collection/python/scrape_batch_start.py --scrape-type subs_curl_scrape --ec2-setup-script-fp data_collection/sh/ec2_curl_setup.sh \
+	--scrape-ids-fp data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_new_commenters.txt \
+	--num-jobs-per-inst 3 --ec2-ip-fp data_collection/configs/commenter_sub_scrape_instances.20200903.txt \
+        --work-dir data/pol_chan_disc/all_commenter_subs_work/round3_chan_commenter_subs_20200903 \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/round3_chan_commenter_subs_20200903/data_loc.txt \
+        --aws-access-id YOUR_ID --aws-secret-key YOUR_SECRET_KEY
+# OPTIONAL - Monitor scrape
+python3 data_collection/python/monitor_scrape.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/round3_chan_commenter_subs_20200903/data_loc.txt \
+        --col-check 1 --email YOUR_EMAIL_ADDRESS
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/round3_chan_commenter_subs_20200903/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS
+# Copy over
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/round3_chan_commenter_subs_20200903/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/all_commenter_subs_work/round3_chan_commenter_subs_20200903 \
+        --comb-fp data/pol_chan_disc/all_commenter_subs/round3_channels_commenter_subs_20200903.txt
+
+
+# Commenters - selenium sub scrape - 20K new commenters - 225 per instance per hour using 25 instances = 3.5 hours ...
+# Sample 10 commenters with 25+ subs from the last set of candidate channels
+python3 data_collection/python/sample_chan_commenters.py --num-samp-commenters 10 --min-subs 25 \
+        --comments-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/round3_channels_20200903_top10_video_comments.txt \
+        --all-com-subs-dir data/pol_chan_disc/all_commenter_subs \
+        --all-com-sel-subs-dir data/pol_chan_disc/all_commenter_subs_selenium \
+        --commenters-samp-fp data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_samp_commenters.txt \
+        --commenters-samp-need-sel-fp data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_samp_commenters_need_sel_scrape.txt
+# Run selenium scrape
+python3 data_collection/python/scrape_batch_start.py --scrape-type subs_selenium_scrape \
+        --scrape-ids-fp data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_samp_commenters_need_sel_scrape.txt \
+        --num-jobs-per-inst 2 --ec2-ip-fp data_collection/configs/commenter_sub_selenium_scrape_instances.20200903.txt \
+        --work-dir data/pol_chan_disc/all_commenter_subs_selenium_work/round3_chan_commenter_subs_selenium_20200903 \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/round3_chan_commenter_subs_selenium_20200903/data_loc.txt \
+        --aws-access-id YOUR_ID --aws-secret-key YOUR_SECRET_KEY
+# OPTIONAL - Monitor scrape
+python3 data_collection/python/monitor_scrape.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/round3_chan_commenter_subs_selenium_20200903/data_loc.txt \
+        --col-check 1 --email YOUR_EMAIL_ADDRESS
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/round3_chan_commenter_subs_selenium_20200903/data_loc.txt \
+	--email YOUR_EMAIL_ADDRESS
+# Copy (only after receiving emails that the scrape jobs have finished)
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/round3_chan_commenter_subs_selenium_20200903/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/all_commenter_subs_selenium_work/round3_chan_commenter_subs_selenium_20200903 \
+        --comb-fp data/pol_chan_disc/all_commenter_subs_selenium/round3_channels_commenter_subs_selenium_20200903.txt
+
+
+####################################
+# ROUND 3 - IDENTIFY NEW POL CHANS #
+####################################
+
+# Generate data for word2vec
+# All channels with 5+ scrap subs (no reason to change this now)
+python3 chan2vec/python/generate_training_data.py \
+        --commenter-config-fp data/pol_chan_disc/chan2vec_training_data_configs/round3_channels_td_config_20200903.json \
+        --chan-docs-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.docs.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt
+shuf data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.docs.txt > data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.docs.shuf.txt
+"""
+Scrape stats-
+Eligible commenters: 10,246,875
+Commenters no subs: 7,047,266
+Commenters w/ subs: 3,192,984
+Eligible sel commenters: 235,599
+Commenters selenium no subs: 1,876
+Commenters selenium w/ subs: 233,734
+All channels found: 12,613,664
+Channels w/ min scrap subs: 1,689,249
+Total combined subs: 127,865,388
+"""
+
+# Generate embeddings
+cd ~/word2vec/
+cp ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.docs.shuf.txt temp.in
+time ./word2vec -train temp.in -output temp.out -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 50 -binary 0 -iter 15
+cp temp.out ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt
+time ./word2vec -train temp.in -output temp16d.out -cbow 1 -size 16 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 50 -binary 0 -iter 15
+cp temp16d.out ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors_16d.txt
+
+# Create new labeled DS (with and without heuristic negative)
+python3 experiments/python/generate_pol_class_labs.py \
+        --pos-fp data/datasets/recfluence_political_channels_20200727.txt \
+        --neg-fp data/datasets/anton_non_political_channels.txt \
+        --filter-fp data/datasets/pol_class_ds_filter.txt \
+	--prev-candidate-fps data/pol_chan_disc/candidate_chans/initial_channels.txt,data/pol_chan_disc/candidate_chans/round1_channels.txt,data/pol_chan_disc/candidate_chans/round2_channels.txt,data/pol_chan_disc/candidate_chans/round3_channels.txt \
+        --min-heuristic-neg-subs 3000000 \
+        --vec-chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --out-no-heur-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_no_heur_lab.txt
+
+# Generate preds for all vectors (leave one out cross validation..)
+cut -f 1 data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+    > data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_preds.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Pull metrics on performance - only for Recfluence and Anton channels
+# Largest threshold where precision is greater >= 0.9
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_no_heur_lab.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_preds.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 1511
+AUC:           0.9895
+Accuracy:      0.9477
+Precision:     0.9871
+Recall:        0.9077
+"""
+
+# Pull metrics on performance - include heuristic channels
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_preds.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 6014
+AUC:           0.9962
+Accuracy:      0.9864
+Precision:     0.9829
+Recall:        0.9077
+"""
+
+# Get new candidate channels (those with 3M+ subs or predicted to be political w/ 10K+ subs)
+python3 experiments/python/get_new_candidate_chans.py \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --scores-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.pol_class_preds.txt \
+        --prev-candidate-fps data/pol_chan_disc/candidate_chans/initial_channels.txt,data/pol_chan_disc/candidate_chans/round1_channels.txt,data/pol_chan_disc/candidate_chans/round2_channels.txt,data/pol_chan_disc/candidate_chans/round3_channels.txt \
+        --out-fp data/pol_chan_disc/candidate_chans/round4_channels.txt --min-prob 0.8
+"""
+All previous candidate negative predictions: 18,533
+All previous candidate positive predictions: 11,177
+All previous candidate positive predictions - Tot Subs: 877,638,638
+New heuristic chans: 8
+New positive chans: 1,866
+New positive chans - Tot Subs: 61,917,598
+"""

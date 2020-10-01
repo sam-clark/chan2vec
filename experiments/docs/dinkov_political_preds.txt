@@ -1,0 +1,580 @@
+
+###################
+# DATA COLLECTION #
+###################
+
+# Videos
+python3 data_collection/python/scrape_batch_start.py --scrape-type video_curl_scrape --ec2-setup-script-fp data_collection/sh/ec2_curl_setup.sh \
+        --scrape-ids-fp  data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --num-jobs-per-inst 3 --ec2-ip-fp data_collection/configs/chan_video_scrape_instances.20200918.txt \
+        --work-dir data/pol_chan_disc/candidate_chan_videos_work/dinkov_chan_vids_20200918 \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_work/dinkov_chan_vids_20200918/data_loc.txt \
+        --scrape-date 2020-09-18
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/candidate_chan_videos_work/dinkov_chan_vids_20200918/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_work/dinkov_chan_vids_20200918/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/candidate_chan_videos_work/dinkov_chan_vids_20200918 \
+        --comb-fp data/pol_chan_disc/candidate_chan_videos/dinkov_channels.20200918.videos.txt
+
+# Comments
+# Get top 10 most viewed videos from each channel
+python3 data_collection/python/get_top_videos.py \
+        --vid-fp data/pol_chan_disc/candidate_chan_videos/dinkov_channels.20200918.videos.txt \
+        --out-fp data/pol_chan_disc/candidate_chan_videos_top10/dinkov_channels.20200918.top10_videos.vid_ids.txt \
+        --most-recent-num 30 --num-keep 10
+# Scrape comments for 30K videos at 200 per instance per hour using 40 instances = 3.75 hours
+python3 data_collection/python/sanity_check_ec2_insts.py data_collection/configs/comment_scrape_instances.20200918.txt
+python3 data_collection/python/scrape_batch_start.py --scrape-type comment_scrape \
+        --scrape-ids-fp data/pol_chan_disc/candidate_chan_videos_top10/dinkov_channels.20200918.top10_videos.vid_ids.txt \
+        --num-jobs-per-inst 2 --ec2-ip-fp data_collection/configs/comment_scrape_instances.20200918.txt \
+        --work-dir data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918 \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918/data_loc.txt \
+        --aws-access-id YOUR_ID --aws-secret-key YOUR_SECRET_KEY
+python3 data_collection/python/monitor_scrape.py --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918/data_loc.txt \
+        --col-check 2 --email YOUR_EMAIL_ADDRESS --sub-string comments
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS --sub-string comments --seconds-sleep 5
+# Copy (only after receiving emails that the scrape jobs have finished)
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918 \
+        --sub-string comments --comb-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/dinkov_channels_20200918_top10_video_comments.txt
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/candidate_chan_videos_top10_comments_work/dinkov_chans_20200918 \
+        --sub-string cat_info --comb-fp data/pol_chan_disc/candidate_chan_videos_top10_cat_info/dinkov_channels_20200918_top10_video_cat_info.txt
+
+# Curl sub scrape
+# Identify commenters that haven't had subs scraped yet
+python3 data_collection/python/get_new_commenter_ids.py \
+        --all-com-subs-dir data/pol_chan_disc/all_commenter_subs \
+        --comments-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/dinkov_channels_20200918_top10_video_comments.txt \
+        --all-commenter-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_all_commenters.txt \
+        --need-sub-scrape-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_new_commenters.txt
+# Scrape commenter subscriptions
+# (17000 / 4260) / 8 = 30 mins
+python3 data_collection/python/sanity_check_ec2_insts.py data_collection/configs/commenter_sub_scrape_instances.20200918.txt
+python3 data_collection/python/scrape_batch_start.py --scrape-type subs_curl_scrape --ec2-setup-script-fp data_collection/sh/ec2_curl_setup.sh \
+        --scrape-ids-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_new_commenters.txt \
+        --num-jobs-per-inst 3 --ec2-ip-fp data_collection/configs/commenter_sub_scrape_instances.20200918.txt \
+        --work-dir data/pol_chan_disc/all_commenter_subs_work/dinkov_chan_commenter_subs_20200918 \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/dinkov_chan_commenter_subs_20200918/data_loc.txt \
+        --aws-access-id YOUR_ID --aws-secret-key YOUR_SECRET_KEY
+# OPTIONAL - Monitor scrape
+python3 data_collection/python/monitor_scrape.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/dinkov_chan_commenter_subs_20200918/data_loc.txt \
+        --col-check 1 --email YOUR_EMAIL_ADDRESS
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/dinkov_chan_commenter_subs_20200918/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS --seconds-sleep 5
+# Copy over
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_work/dinkov_chan_commenter_subs_20200918/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/all_commenter_subs_work/dinkov_chan_commenter_subs_20200918 \
+        --comb-fp data/pol_chan_disc/all_commenter_subs/dinkov_channels_commenter_subs_20200918.txt
+
+# Commenters - selenium sub scrape - 9,641 new commenters - 225 per instance per hour using 16 instances = 2 hours 40 mins
+# Sample 10 commenters with 25+ subs from the last set of candidate channels
+python3 data_collection/python/sample_chan_commenters.py --num-samp-commenters 10 --min-subs 25 \
+        --comments-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/dinkov_channels_20200918_top10_video_comments.txt \
+        --all-com-subs-dir data/pol_chan_disc/all_commenter_subs \
+        --all-com-sel-subs-dir data/pol_chan_disc/all_commenter_subs_selenium \
+        --commenters-samp-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_samp_commenters.txt \
+        --commenters-samp-need-sel-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_samp_commenters_need_sel_scrape.txt
+# Get all commenters with 25+ subs from the last set of candidate channels
+python3 data_collection/python/sample_chan_commenters.py --num-samp-commenters 100000 --min-subs 25 \
+        --comments-fp data/pol_chan_disc/candidate_chan_videos_top10_comments/dinkov_channels_20200918_top10_video_comments.txt \
+        --all-com-subs-dir data/pol_chan_disc/all_commenter_subs \
+        --all-com-sel-subs-dir data/pol_chan_disc/all_commenter_subs_selenium \
+        --commenters-samp-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_full_sel_commenters.txt \
+        --commenters-samp-need-sel-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_all_commenters_need_sel_scrape.txt
+# Run selenium scrape
+python3 data_collection/python/sanity_check_ec2_insts.py data_collection/configs/commenter_sub_selenium_scrape_instances.20200918.txt
+python3 data_collection/python/scrape_batch_start.py --scrape-type subs_selenium_scrape \
+        --scrape-ids-fp data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_all_commenters_need_sel_scrape.txt \
+        --num-jobs-per-inst 2 --ec2-ip-fp data_collection/configs/commenter_sub_selenium_scrape_instances.20200918.txt \
+        --work-dir data/pol_chan_disc/all_commenter_subs_selenium_work/dinkov_chan_commenter_subs_selenium_20200918 \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/dinkov_chan_commenter_subs_selenium_20200918/data_loc.txt \
+        --aws-access-id YOUR_ID --aws-secret-key YOUR_SECRET_KEY
+# OPTIONAL - Monitor scrape
+python3 data_collection/python/monitor_scrape.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/dinkov_chan_commenter_subs_selenium_20200918/data_loc.txt \
+        --col-check 1 --email YOUR_EMAIL_ADDRESS
+python3 data_collection/python/monitor_scrape_success_flag.py --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/dinkov_chan_commenter_subs_selenium_20200918/data_loc.txt \
+        --email YOUR_EMAIL_ADDRESS --seconds-sleep 5
+# Copy (only after receiving emails that the scrape jobs have finished)
+python3 data_collection/python/copy_ec2_data.py \
+        --data-loc-fp data/pol_chan_disc/all_commenter_subs_selenium_work/dinkov_chan_commenter_subs_selenium_20200918/data_loc.txt \
+        --local-work-dir data/pol_chan_disc/all_commenter_subs_selenium_work/dinkov_chan_commenter_subs_selenium_20200918 \
+        --comb-fp data/pol_chan_disc/all_commenter_subs_selenium/dinkov_channels_commenter_subs_selenium_20200918.txt
+
+
+################
+# Dinkov Stats #
+################
+
+# Get channels that had videos available
+grep -v -P "\t\t\t\t\t" data/pol_chan_disc/candidate_chan_videos/dinkov_channels.20200918.videos.txt | cut -f 1 | sort | uniq \
+     > data/pol_chan_disc/candidate_chan_videos/dinkov_channels.20200918.videos.chans_with_vids.txt
+
+# Filt dinkov preds
+python3 experiments/python/filt_dinkov_preds.py \
+	--chan-stats-fp data/datasets/dinkov_chan_stats.txt \
+	--preds-fp data/datasets/interspeech_paper_111111.form_preds.txt \
+	--filt-chans-fp data/pol_chan_disc/candidate_chan_videos/dinkov_channels.20200918.videos.chans_with_vids.txt \
+	--out-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.chan_with_vids.txt
+"""
+Total Channels: 412
+Total Channels w/ 10K+ Subs: 142
+Total Channels w/ 1K+ Subs: 270
+Subs sum: 47,012,187
+Views sum: 20,757,395,802
+"""
+
+# Get perf
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.chan_with_vids.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 412
+Max Label 176 center
+Baseline: 0.427
+Accuracy: 0.733
+"""
+
+
+##################################
+# Class Experiment - Normal Samp #
+##################################
+
+# Generate data for word2vec
+# All channels with 5+ scrap subs (no reason to change this now)
+python3 chan2vec/python/generate_training_data.py \
+        --commenter-config-fp data/pol_chan_disc/chan2vec_training_data_configs/dinkov_channels_td_config_20200918.json \
+        --chan-docs-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.docs.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.chan_info.txt
+shuf data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.docs.txt > data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.docs.shuf.txt
+"""
+Scrape stats-
+Eligible commenters: 87,089
+Commenters no subs: 62,271
+Commenters w/ subs: 24,842
+Eligible sel commenters: 2,490
+Commenters selenium no subs: 46
+Commenters selenium w/ subs: 2,445
+All channels found: 355,497
+Channels w/ min scrap subs: 30,899
+Total combined subs: 1,085,067
+"""
+
+# Generate embeddings
+cd ~/word2vec/
+cp ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.docs.shuf.txt temp.in
+time ./word2vec -train temp.in -output temp.out -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 50 -binary 0 -iter 15
+cp temp.out ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.vectors.txt
+
+# Generate preds for all vectors (leave one out cross validation..)
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.pol_lean_preds.txt \
+        --num-neighbs 10 --use-gpu True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.pol_lean_preds.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 202
+Max Label 94 right
+Baseline: 0.465
+Accuracy: 0.832
+
+Precision Recall:
+94	0.936	0.936	right
+54	0.734	0.870	left
+54	0.750	0.611	center
+
+Confusion Matrix:
+Label order:  left, center, right
+47	7	0
+15	33	6
+2	4	88
+"""
+
+# Preds - regression
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.pol_lean_preds_reg.txt \
+        --num-neighbs 10 --use-gpu True --regression True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.pol_lean_preds_reg.txt --regression-round True
+"""
+Number Instances: 202
+Max Label 94 1
+Baseline: 0.465
+Accuracy: 0.817
+
+Precision Recall:
+94	0.954	0.883	1
+54	0.796	0.796	-1
+54	0.639	0.722	0
+"""
+
+# Filt dinkov preds
+python3 experiments/python/filt_dinkov_preds.py \
+	--chan-stats-fp data/datasets/dinkov_chan_stats.txt \
+	--preds-fp data/datasets/interspeech_paper_111111.form_preds.txt \
+	--filt-chans-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_channels_ds.pol_lean_preds.txt \
+	--out-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.norm_scrap.txt
+"""
+Total Channels: 202
+Total Channels w/ 10K+ Subs: 124
+Total Channels w/ 1K+ Subs: 183
+Subs sum: 45,733,303
+Views sum: 19,861,809,361
+"""
+
+# Get perf
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.norm_scrap.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 202
+Max Label 94 right
+Baseline: 0.465
+Accuracy: 0.728
+"""
+
+
+###################################
+# Class Experiment - All Selenium #
+###################################
+
+###
+# Normal number of shuffles
+###
+
+# Generate data for word2vec
+# All channels with 5+ scrap subs (no reason to change this now)
+python3 chan2vec/python/generate_training_data.py \
+        --commenter-config-fp data/pol_chan_disc/chan2vec_training_data_configs/dinkov_fs_channels_td_config_20200918.json \
+        --chan-docs-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.docs.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.chan_info.txt
+shuf data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.docs.txt > data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.docs.shuf.txt
+"""
+Scrape stats-
+Eligible commenters: 87,089
+Commenters no subs: 62,271
+Commenters w/ subs: 24,842
+Eligible sel commenters: 18,175
+Commenters selenium no subs: 319
+Commenters selenium w/ subs: 17,861
+All channels found: 953,356
+Channels w/ min scrap subs: 102,503
+Total combined subs: 3,966,715
+"""
+
+# Generate embeddings
+cd ~/word2vec/
+cp ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.docs.shuf.txt temp.in
+time ./word2vec -train temp.in -output temp.out -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 50 -binary 0 -iter 15
+cp temp.out ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.vectors.txt
+
+# Generate preds for all vectors (leave one out cross validation..)
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.pol_lean_preds.txt \
+        --num-neighbs 10 --use-gpu True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.pol_lean_preds.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 261
+Max Label 116 right
+Baseline: 0.444
+Accuracy: 0.858
+
+Precision Recall:
+116	0.932	0.948	right
+74	0.786	0.892	left
+71	0.814	0.676	center
+
+Confusion Matrix:
+Label order:  left, center, right
+66	7	1
+16	48	7
+2	4	110
+"""
+
+# Preds - regression
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.pol_lean_preds_reg.txt \
+        --num-neighbs 10 --use-gpu True --regression True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.pol_lean_preds_reg.txt --regression-round True
+"""
+Number Instances: 261
+Max Label 116 1
+Baseline: 0.444
+Accuracy: 0.854
+
+Precision Recall:
+116	0.955	0.922	1
+74	0.818	0.851	-1
+71	0.736	0.746	0
+"""
+
+# Filt dinkov preds
+python3 experiments/python/filt_dinkov_preds.py \
+	--chan-stats-fp data/datasets/dinkov_chan_stats.txt \
+	--preds-fp data/datasets/interspeech_paper_111111.form_preds.txt \
+	--filt-chans-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_channels_ds.pol_lean_preds.txt \
+	--out-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.full_sel_scrap.txt
+"""
+Total Channels: 261
+Total Channels w/ 10K+ Subs: 138
+Total Channels w/ 1K+ Subs: 227
+Subs sum: 46822049
+Views sum: 20564490142
+"""
+
+# Get perf
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.full_sel_scrap.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 261
+Max Label 116 right
+Baseline: 0.444
+Accuracy: 0.709
+"""
+
+
+################################################
+# Class Experiment - All Selenium + Recfluence #
+################################################
+
+# Create the following with Recfluence only channels (the initial channels included negative examples as well that need to be filtered out)
+python3 experiments/python/filter_comment_files.py \
+	--comment-fps data/pol_chan_disc/candidate_chan_videos_top10_comments/initial_channels_20200827_top10_video_comments.txt \
+	--samp-fps data/pol_chan_disc/commenter_need_sub_scrap/initial_channels_20200827_top10_video_samp_commenters.txt \
+	--chan-filter-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--out-commenters-fp data/pol_chan_disc/commenter_need_sub_scrap/recfluence_only_channels_20200918_top10_video_all_commenters.txt \
+	--out-commenters-samp-fp data/pol_chan_disc/commenter_need_sub_scrap/recfluence_only_channels_20200918_top10_video_samp_commenters.txt
+
+# Generate data for word2vec
+# All channels with 5+ scrap subs + include recfluence channels that aren't in the dinkov set
+python3 chan2vec/python/generate_training_data.py \
+        --commenter-config-fp data/pol_chan_disc/chan2vec_training_data_configs/dinkov_fs_rec_channels_td_config_20200918.json \
+        --chan-docs-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.docs.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.chan_info.txt
+shuf data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.docs.txt > data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.docs.shuf.txt
+"""
+Scrape stats-
+Eligible commenters: 501046
+Commenters no subs: 344009
+Commenters w/ subs: 155623
+Eligible sel commenters: 24529
+Commenters selenium no subs: 428
+Commenters selenium w/ subs: 24107
+All channels found: 1,460,699
+Channels w/ min scrap subs: 173,254
+Total combined subs: 8,670,482
+"""
+
+# Generate embeddings
+cd ~/word2vec/
+cp ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.docs.shuf.txt temp.in
+time ./word2vec -train temp.in -output temp.out -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 50 -binary 0 -iter 15
+cp temp.out ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.vectors.txt
+
+# Generate preds for all vectors (leave one out cross validation..)
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.pol_lean_preds.txt \
+        --num-neighbs 10 --use-gpu True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.pol_lean_preds.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 278
+Max Label 119 right
+Baseline: 0.428
+Accuracy: 0.842
+
+Precision Recall:
+119	0.919	0.950	right
+81	0.810	0.630	center
+78	0.761	0.897	left
+
+Confusion Matrix:
+Label order:  left, center, right
+70	8	0
+20	51	10
+2	4	113
+"""
+
+# Generate preds - Regression
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.pol_lean_preds_reg.txt \
+        --num-neighbs 10 --use-gpu True --regression True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.pol_lean_preds_reg.txt --regression-round True
+"""
+Number Instances: 278
+Max Label 119 1
+Baseline: 0.428
+Accuracy: 0.853
+
+Precision Recall:
+119	0.949	0.941	1
+81	0.753	0.753	0
+78	0.810	0.821	-1
+"""
+
+# Filt dinkov preds
+python3 experiments/python/filt_dinkov_preds.py \
+	--chan-stats-fp data/datasets/dinkov_chan_stats.txt \
+	--preds-fp data/datasets/interspeech_paper_111111.form_preds.txt \
+	--filt-chans-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_channels_ds.pol_lean_preds.txt \
+	--out-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.full_sel_rec_scrap.txt
+"""
+Total Channels: 278
+Total Channels w/ 10K+ Subs: 140
+Total Channels w/ 1K+ Subs: 237
+Subs sum: 46,879,831
+Views sum: 20,635,883,336
+"""
+
+# Get perf
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.full_sel_rec_scrap.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 278
+Max Label 119 right
+Baseline: 0.428
+Accuracy: 0.705
+"""
+
+
+####################################################################
+# Class Experiment - All Selenium + Recfluence + All New Political #
+####################################################################
+
+# Create the following with Recfluence only channels (the initial channels included negative examples as well that need to be filtered out)
+python3 experiments/python/filter_comment_files.py \
+	--comment-fps data/pol_chan_disc/candidate_chan_videos_top10_comments/round1_channels_20200830_top10_video_comments.txt,data/pol_chan_disc/candidate_chan_videos_top10_comments/round2_channels_20200902_top10_video_comments.txt,data/pol_chan_disc/candidate_chan_videos_top10_comments/round3_channels_20200903_top10_video_comments.txt \
+	--samp-fps data/pol_chan_disc/commenter_need_sub_scrap/round1_channels_20200830_top10_video_samp_commenters.txt,data/pol_chan_disc/commenter_need_sub_scrap/round2_channels_20200902_top10_video_samp_commenters.txt,data/pol_chan_disc/commenter_need_sub_scrap/round3_channels_20200903_top10_video_samp_commenters.txt \
+	--chan-filter-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.pol_class_preds_all_feats.filt_topic_non_eng_pol.chan_ids.txt \
+	--out-commenters-fp data/pol_chan_disc/commenter_need_sub_scrap/new_pred_pol_only_channels_20200918_top10_video_all_commenters.txt \
+	--out-commenters-samp-fp data/pol_chan_disc/commenter_need_sub_scrap/new_pred_pol_only_channels_20200918_top10_video_samp_commenters.txt
+
+# Generate data for word2vec
+# All channels with 5+ scrap subs + include recfluence channels that aren't in the dinkov set
+python3 chan2vec/python/generate_training_data.py \
+        --commenter-config-fp data/pol_chan_disc/chan2vec_training_data_configs/dinkov_fs_rec_np_channels_td_config_20200918.json \
+        --chan-docs-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.docs.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.chan_info.txt
+shuf data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.docs.txt > data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.docs.shuf.txt
+"""
+Scrape stats-
+Eligible commenters: 2,945,743
+Commenters no subs: 1,913,525
+Commenters w/ subs: 1,031,036
+Eligible sel commenters: 102,532
+Commenters selenium no subs: 1,159
+Commenters selenium w/ subs: 101,384
+All channels found: 5,345,812
+Channels w/ min scrap subs: 703,701
+Total combined subs: 46,860,765
+"""
+
+# Generate embeddings
+cd ~/word2vec/
+cp ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.docs.shuf.txt temp.in
+time ./word2vec -train temp.in -output temp.out -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 50 -binary 0 -iter 15
+cp temp.out ~/chan2vec/data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.vectors.txt
+
+# Generate preds for all vectors (leave one out cross validation..)
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.pol_lean_preds.txt \
+        --num-neighbs 10 --use-gpu True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.pol_lean_preds.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 333
+Max Label 127 right
+Baseline: 0.381
+Accuracy: 0.817
+
+Precision Recall:
+127	0.871	0.953	right
+119	0.878	0.605	center
+87	0.705	0.908	left
+
+Confusion Matrix:
+Label order:  left, center, right
+79	6	2
+31	72	16
+2	4	121
+"""
+
+# Generate preds for all vectors (leave one out cross validation..)
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.chan_info.txt \
+        --label-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-chan-fp data/datasets/dinkov_pol_bias_labs.chan_ids.txt \
+        --out-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.pol_lean_preds_reg.txt \
+        --num-neighbs 10 --use-gpu True --regression True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs_reg.txt \
+        --score-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.pol_lean_preds_reg.txt --regression-round True
+"""
+Number Instances: 333
+Max Label 127 1
+Baseline: 0.381
+Accuracy: 0.838
+
+Precision Recall:
+127	0.908	0.929	1
+119	0.800	0.739	0
+87	0.785	0.839	-1
+"""
+
+# Filt dinkov preds
+python3 experiments/python/filt_dinkov_preds.py \
+	--chan-stats-fp data/datasets/dinkov_chan_stats.txt \
+	--preds-fp data/datasets/interspeech_paper_111111.form_preds.txt \
+	--filt-chans-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_dinkov_fs_rec_np_channels_ds.pol_lean_preds.txt \
+	--out-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.full_sel_rec_np_scrap.txt
+"""
+Total Channels: 333
+Total Channels w/ 10K+ Subs: 142
+Total Channels w/ 1K+ Subs: 265
+Subs sum: 47003925
+Views sum: 20719522362
+"""
+
+# Get perf
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/dinkov_pol_bias_labs.txt \
+        --score-fp data/pol_chan_class/dinkov_filt_preds/interspeech_paper_111111.form_preds.full_sel_rec_np_scrap.txt --lab-conf-matrix-order left,center,right
+"""
+Number Instances: 333
+Max Label 127 right
+Baseline: 0.381
+Accuracy: 0.730
+"""

@@ -1,0 +1,7 @@
+{
+    "commenters_fp_list" : ["data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_all_commenters.txt"],
+    "commenters_sel_samp_fp_list" : ["data/pol_chan_disc/commenter_need_sub_scrap/dinkov_channels_20200918_top10_video_full_sel_commenters.txt"],
+    "commenters_subs_dir" : "data/pol_chan_disc/all_commenter_subs",
+    "commenters_subs_selenium_dir" : "data/pol_chan_disc/all_commenter_subs_selenium",
+    "terminated_channels_fp" : "data/datasets/channels_no_api_data.txt"
+}

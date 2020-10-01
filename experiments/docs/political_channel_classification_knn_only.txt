@@ -1,0 +1,322 @@
+
+##################################################
+# TRAINING ON RECFLUENCE + ANTON + HEURISTIC NEG #
+##################################################
+
+# Create new labeled DS
+# UPDATE with slight changes to filter
+mkdir -p data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/
+python3 experiments/python/generate_pol_class_labs.py \
+        --pos-fp data/datasets/recfluence_political_channels_20200727.txt \
+        --neg-fp data/datasets/anton_non_political_channels.txt \
+        --filter-fp data/datasets/pol_class_ds_filter_20200904.txt \
+        --prev-candidate-fps data/pol_chan_disc/candidate_chans/initial_channels.txt,data/pol_chan_disc/candidate_chans/round1_channels.txt,data/pol_chan_disc/candidate_chans/round2_channels.txt,data/pol_chan_disc/candidate_chans/round3_channels.txt \
+        --min-heuristic-neg-subs 3000000 \
+        --vec-chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --out-no-heur-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_no_heur_lab.txt
+
+# Get 200 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Get 16 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors_16d.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Generate language predictions
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/youtube_api_default_language_ds_bin.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+
+####
+# Get stats for just using 200 dimension
+####
+
+# Just filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+	--knn-pred-fps data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.txt \
+	--lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+	--out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.lang_filt.txt
+# Anton + Recfluence
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_no_heur_lab.txt \
+        --score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.lang_filt.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 1509
+AUC:           0.9889
+Accuracy:      0.9490
+Precision:     0.9871
+Recall:        0.9101
+"""
+
+# Anton + Recfluence + Heuristic Neg
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+        --score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.lang_filt.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 6010
+AUC:           0.9956
+Accuracy:      0.9867
+Precision:     0.9829
+Recall:        0.9101
+"""
+""" 0.9 thresh
+Num instances: 6010
+AUC:           0.9956
+Accuracy:      0.9825
+Precision:     0.9895
+Recall:        0.8704
+"""
+
+# New labels
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/datasets/combo_samp_labs_20200915.txt \
+        --score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.lang_filt.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 98
+AUC:           0.9238
+Accuracy:      0.8469
+Precision:     0.7143
+Recall:        0.9091
+"""
+""" 0.9 thresh
+AUC:           0.9238
+Accuracy:      0.8673
+Precision:     0.8333
+Recall:        0.7576
+"""
+
+####
+# Get stats for just using 16 dimension
+####
+
+# Just filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+	--knn-pred-fps data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.txt \
+	--lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+	--out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.lang_filt.txt
+# Anton + Recfluence
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_no_heur_lab.txt \
+        --score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.lang_filt.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 1509
+AUC:           0.9857
+Accuracy:      0.9397
+Precision:     0.9784
+Recall:        0.8995
+"""
+
+# Anton + Recfluence + Heuristic Neg
+python3 chan2vec/python/gen_pred_stats_bin.py \
+	--lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+	--score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.lang_filt.txt \
+	--no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 6010
+AUC:           0.9938
+Accuracy:      0.9840
+Precision:     0.9714
+Recall:        0.8995
+"""
+
+# New labels
+python3 chan2vec/python/gen_pred_stats_bin.py \
+	--lab-fp data/datasets/combo_samp_labs_20200915.txt \
+	--score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.lang_filt.txt \
+	--no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 98
+AUC:           0.9126
+Accuracy:      0.8469
+Precision:     0.7647
+Recall:        0.7879
+"""
+
+####
+# Get stats for combining 16 and 200 dim preds
+####
+
+# Averaging preds and filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+	--knn-pred-fps data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.txt,data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.txt \
+	--lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+	--out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.txt
+# Anton + Recfluence
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_no_heur_lab.txt \
+        --score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.txt \
+        --no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 1509
+AUC:           0.9891
+Accuracy:      0.9457
+Precision:     0.9884
+Recall:        0.9021
+"""
+
+# Anton + Recfluence + Heuristic Neg
+python3 chan2vec/python/gen_pred_stats_bin.py \
+	--lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+	--score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.txt \
+	--no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 6010
+AUC:           0.9961
+Accuracy:      0.9859
+Precision:     0.9841
+Recall:        0.9021
+"""
+
+# New labels
+python3 chan2vec/python/gen_pred_stats_bin.py \
+	--lab-fp data/datasets/combo_samp_labs_20200915.txt \
+	--score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.txt \
+	--no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 98
+AUC:           0.9462
+Accuracy:      0.8878
+Precision:     0.8235
+Recall:        0.8485
+"""
+
+
+###############################################################
+# TRAINING ON RECFLUENCE + ANTON + HEURISTIC NEG + NEW LABELS #
+###############################################################
+
+# Combine combo labels with prod labels
+# TODO: Replace this with new dataset location
+cat data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+    data/datasets/combo_samp_labs_20200915.txt \
+    > data/datasets/prod_and_comb_labs_20200915.txt
+
+# Get 200 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/prod_and_comb_labs_20200915.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.new_labs.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Get 16 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors_16d.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/prod_and_comb_labs_20200915.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.chan_ids.txt \
+        --out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.new_labs.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Averaging preds and filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+	--knn-pred-fps data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.200dim_pol_pred.new_labs.txt,data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.16dim_pol_pred.new_labs.txt \
+	--lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+	--out-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.new_labs.txt
+
+# Anton + Recfluence + Heuristic Neg
+python3 chan2vec/python/gen_pred_stats_bin.py \
+	--lab-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+	--score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.new_labs.txt \
+	--no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 6010
+AUC:           0.9968
+Accuracy:      0.9860
+Precision:     0.9855
+Recall:        0.9021
+"""
+
+# New labels
+python3 chan2vec/python/gen_pred_stats_bin.py \
+	--lab-fp data/datasets/combo_samp_labs_20200915.txt \
+	--score-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.comb_16_200_dim_pol_pred.new_labs.txt \
+	--no-fold-lab-col True --pred-thresh 0.8
+"""
+Num instances: 98
+AUC:           0.9580
+Accuracy:      0.8980
+Precision:     0.8485
+Recall:        0.8485
+"""
+
+
+#######################
+# SCORE OUT-OF-SAMPLE #
+#######################
+
+# Get those that aren't in the training data
+data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.txt
+
+# Get 200 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/prod_and_comb_labs_20200915.txt \
+        --score-chan-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.txt \
+        --out-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_200d_preds.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Get 16 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors_16d.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/prod_and_comb_labs_20200915.txt \
+        --score-chan-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.txt \
+        --out-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_16d_preds.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Averaging preds and filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+	--knn-pred-fps data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_200d_preds.txt,data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_16d_preds.txt \
+	--lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+	--out-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.txt
+
+# Filter out topic chans, chans with <20 scrap subs, and chans with <0.8 political prob (language already handled)
+python3 experiments/python/filter_pol_class.py \
+        --pol-class-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --lang-class-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --out-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.txt \
+        --lang-thresh 0.5 --pol-thresh 0.8 --min-scrap-subs 20
+
+
+###################################
+# GET NON - LANGUAGE FILT NUMBERS #
+###################################
+
+# Averaging preds and filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+	--knn-pred-fps data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_200d_preds.txt,data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_16d_preds.txt \
+	--lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+	--lang-pred-thresh -0.1 --out-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.no_lang_filt.txt
+
+# Filter out topic chans, chans with <20 scrap subs, and chans with <0.8 political prob (language already handled)
+python3 experiments/python/filter_pol_class.py \
+        --pol-class-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.no_lang_filt.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --lang-class-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --out-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.no_lang_filt.txt \
+        --lang-thresh -0.1 --pol-thresh 0.8 --min-scrap-subs 20
