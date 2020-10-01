@@ -1,0 +1,241 @@
+############
+# GET DATA #
+############
+
+# Scrape Social Blade Traffic (from another repo)
+cat ~/youtube-channel-classification/data/datasets/recfluence_political_channels_20200727.txt \
+    ~/youtube-channel-classification/data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.pol_class_preds_all_feats.filt_topic_non_eng_pol.chan_ids.txt \
+    > ~/youtube-channel-classification/data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_plus_oos_pos_preds.chan_ids.txt
+python3 socialblade/python/scrape_chan_pages.py \
+	~/youtube-channel-classification/data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_plus_oos_pos_preds.chan_ids.txt \
+	socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages 6305fc370cd6f15b3fcde2096f0f78d2
+# Get channels that were missed the first time
+python3 socialblade/python/scrape_chan_pages.py \
+	~/youtube-channel-classification/data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_plus_oos_pos_preds.chan_ids.MISSED.txt \
+	socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages_missed 6305fc370cd6f15b3fcde2096f0f78d2
+cp socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages_missed/* socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages/
+# Get 400 channels that were added from latest model changes
+data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.txt.NEW_POS
+python3 socialblade/python/scrape_chan_pages.py \
+	~/youtube-channel-classification/data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.txt.NEW_POS \
+	socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages_missed_v2 6305fc370cd6f15b3fcde2096f0f78d2
+cp socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages_missed_v2/* socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages/
+
+# Parse monthly stats (from another repo)
+python3 socialblade/python/parse_sb_stats.py --in-dir socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages \
+	--out-fp socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+	--parse-type monthly_views
+cp ~/youtube-nlp/socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+   ~/youtube-channel-classification/data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt
+# Parse weekly stats (from another repo)
+python3 socialblade/python/parse_sb_stats.py --in-dir socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages \
+	--out-fp socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.weekly_view_parse.txt \
+	--parse-type weekly_views
+cp ~/youtube-nlp/socialblade/data/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.weekly_view_parse.txt \
+   ~/youtube-channel-classification/data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.weekly_view_parse.txt
+
+
+# Combine new predicted soft tags and Recfluence soft tags
+python3 experiments/python/combine_recfluence_and_preds_soft_tags.py data/datasets/pol_class_ds_filter_20200904.txt \
+	data/datasets/recfluence_vis_channel_stats_20200727.soft_tags.txt \
+	data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.all_pol_pos_chans.soft_tag_preds.filt_conv.txt \
+	data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt
+
+
+#########################
+# SOFT TAG COOCCURRENCE #
+#########################
+
+python3 experiments/python/tag_cooccurence.py data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian
+"""
+;PartisanLeft;PartisanRight;SocialJustice;AntiSJW;Conspiracy;Socialist;AntiTheist;WhiteIdentitarian
+PartisanLeft;1.000;0.000;0.423;0.000;0.000;0.081;0.009;0.000
+PartisanRight;0.000;1.000;0.000;0.237;0.336;0.000;0.000;0.036
+SocialJustice;0.419;0.000;1.000;0.000;0.000;0.206;0.019;0.000
+AntiSJW;0.000;0.419;0.000;1.000;0.010;0.000;0.011;0.055
+Conspiracy;0.000;0.375;0.000;0.007;1.000;0.000;0.000;0.000
+Socialist;0.242;0.000;0.621;0.000;0.000;1.000;0.000;0.000
+AntiTheist;0.020;0.000;0.044;0.067;0.000;0.000;1.000;0.000
+WhiteIdentitarian;0.000;0.756;0.000;0.656;0.000;0.000;0.000;1.000
+
+;PartisanLeft;PartisanRight;SocialJustice;AntiSJW;Conspiracy;Socialist;AntiTheist;WhiteIdentitarian
+PartisanLeft;567;0;240;0;0;46;5;0
+PartisanRight;0;2742;0;651;921;0;0;99
+SocialJustice;240;0;573;0;0;118;11;0
+AntiSJW;0;651;0;1552;16;0;17;86
+Conspiracy;0;921;0;16;2453;0;0;0
+Socialist;46;0;118;0;0;190;0;0
+AntiTheist;5;0;11;17;0;0;252;0
+WhiteIdentitarian;0;99;0;86;0;0;0;131
+"""
+
+##################
+# COMPARE GROUPS #
+##################
+
+# Subscribers - Recfluence vs. New
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian
+"""
+0.661	601371716	645	256657728	6407	344713988	0.43	YouTube
+0.237	215808226	79	136967230	731	78840996	0.63	MainstreamMedia
+0.284	258122346	233	175037248	1169	83085098	0.68	L
+0.360	327727320	351	94230929	4352	233496391	0.29	R
+0.274	249050595	171	159925599	1350	89124996	0.64	C
+0.165	150363328	122	123761628	445	26601700	0.82	PartisanLeft
+0.216	196987795	209	61562999	2518	135424796	0.31	PartisanRight
+0.107	97458698	106	74649298	466	22809400	0.77	SocialJustice
+0.182	166088526	243	76712229	1295	89376297	0.46	AntiSJW
+0.160	145387797	76	24423100	2371	120964697	0.17	Conspiracy
+0.016	14534600	44	8373600		145	6161000		0.58	Socialist
+0.020	17749500	44	9828400		206	7921100		0.55	AntiTheist
+0.007	6755800		32	3140700		94	3615100		0.46	WhiteIdentitarian
+"""
+
+# Subscribers - Recfluence vs. New - Discovery + soft tag prediction correction
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+	--soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt
+"""
+1.06	0.728	621471162	645	256657728	6780	364813434	0.41	YouTube
+1.11	0.262	224089770	79	136967230	807	87122540	0.61	MainstreamMedia
+1.10	0.312	266209380	233	175037248	1282	91172132	0.66	L
+0.94	0.367	312961254	351	94230929	4076	218730325	0.30	R
+1.77	0.373	318072674	171	159925599	2395	158147075	0.50	C
+1.17	0.181	154778227	122	123761628	518	31016599	0.80	PartisanLeft
+0.96	0.224	191540748	209	61562999	2416	129977749	0.32	PartisanRight
+1.36	0.124	105559952	106	74649298	631	30910654	0.71	SocialJustice
+0.97	0.191	163059713	243	76712229	1251	86347484	0.47	AntiSJW
+1.14	0.190	162445963	76	24423100	2705	138022863	0.15	Conspiracy
+0.81	0.016	13354068	44	8373600	117	4980468	0.63	Socialist
+1.13	0.022	18765792	44	9828400	232	8937392	0.52	AntiTheist
+1.00	0.008	6755800	32	3140700	94	3615100	0.46	WhiteIdentitarian
+"""
+
+
+# Views from last 12 months - Recfluence vs. New - Discovery + soft tag prediction correction
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+	--soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+	--monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+	--start-views-dt 2019-08-01
+"""
+1.06	0.461	38409907772	644	18710417257	6760	19699490515	0.49	YouTube
+1.11	0.522	43495914582	79	26284841080	805	17211073502	0.60	MainstreamMedia
+1.10	0.415	34566243928	233	22837115303	1277	11729128625	0.66	L
+0.94	0.271	22596749861	350	9364873660	4062	13231876201	0.41	R
+1.77	0.338	28196004715	171	15723345797	2393	12472658918	0.56	C
+1.17	0.236	19699048250	122	17171630482	515	2527417768	0.87	PartisanLeft
+0.96	0.195	16215133594	208	7392485737	2406	8822647857	0.46	PartisanRight
+1.36	0.075	6271926124	106	4871267035	630	1400659089	0.78	SocialJustice
+0.97	0.148	12346433837	243	6774115674	1247	5572318163	0.55	AntiSJW
+1.14	0.064	5360279151	76	975823606	2697	4384455545	0.18	Conspiracy
+0.81	0.006	500209308	44	296416092	117	203793216	0.59	Socialist
+1.13	0.009	718463993	44	421704543	232	296759450	0.59	AntiTheist
+1.00	0.003	229883175	32	39463414	94	190419761	0.17	WhiteIdentitarian
+"""
+# NOTE: Missing traffic for 25 chans...
+
+
+# Views from last 12 months - Head vs. Tail - traffic correction
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+	--soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+	--monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+	--start-views-dt 2019-08-01 --head-subs-thresh 500000
+"""
+1.06	0.461	38409907772	152	19024388129	7248	19385519642	0.50	YouTube
+1.11	0.522	43495914582	85	33264111364	796	10231803217	0.76	MainstreamMedia
+1.10	0.415	34566243928	92	26880610660	1415	7685633268	0.78	L
+0.94	0.271	22596749861	82	9554700371	4333	13042049489	0.42	R
+1.77	0.338	28196004715	70	19285907257	2474	8910097457	0.68	C
+1.17	0.236	19699048250	48	17218750066	588	2480298183	0.87	PartisanLeft
+0.96	0.195	16215133594	45	7649620820	2569	8565512773	0.47	PartisanRight
+1.36	0.075	6271926124	31	4544912590	703	1727013533	0.72	SocialJustice
+0.97	0.148	12346433837	57	6630044828	1434	5716389009	0.54	AntiSJW
+1.14	0.064	5360279151	26	930442686	2744	4429836465	0.17	Conspiracy
+0.81	0.006	500209308	3	99764697	158	400444611	0.20	Socialist
+1.13	0.009	718463993	5	232762040	271	485701953	0.32	AntiTheist
+1.00	0.003	229883175	2	6374859	124	223508316	0.03	WhiteIdentitarian
+"""
+
+# Views from last 12 months - Mainstream vs. YouTube - traffic correction
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+	--soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+	--monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+	--start-views-dt 2019-08-01 --mainstream-split True
+"""
+1.06	0.461	38409907772	0	0	7404	38409907772	0.00	YouTube
+1.11	0.522	43495914582	808	43495914582	0	0	1.00	MainstreamMedia
+1.10	0.415	34566243928	361	23060849052	1118	11505394876	0.67	L
+0.94	0.271	22596749861	31	4301948331	4383	18294801530	0.19	R
+1.77	0.338	28196004715	334	17044972268	1994	11151032447	0.60	C
+1.17	0.236	19699048250	94	10249880205	531	9449168044	0.52	PartisanLeft
+0.96	0.195	16215133594	26	3787732449	2589	12427401144	0.23	PartisanRight
+1.36	0.075	6271926124	24	2060100505	707	4211825619	0.33	SocialJustice
+0.97	0.148	12346433837	0	0	1490	12346433837	0.00	AntiSJW
+1.14	0.064	5360279151	0	0	2773	5360279151	0.00	Conspiracy
+0.81	0.006	500209308	0	0	161	500209308	0.00	Socialist
+1.13	0.009	718463993	0	0	276	718463993	0.00	AntiTheist
+1.00	0.003	229883175	0	0	126	229883175	0.00	WhiteIdentitarian
+"""
+
+# Views from 2018/08 to 2019/08 - Recfluence vs. New - Discovery + soft tag prediction correction
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+	--soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+	--monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+	--start-views-dt 2018-08-01 --end-views-dt 2019-08-01
+"""
+1.06	0.570	30004695838	643	15334263787	6327	14670432051	0.51	YouTube
+1.11	0.416	21910672183	76	14018539593	776	7892132590	0.64	MainstreamMedia
+1.10	0.373	19662580157	230	14268593608	1200	5393986549	0.73	L
+0.94	0.301	15877881353	349	6556995047	3771	9320886306	0.41	R
+1.77	0.363	19141732962	171	10436101364	2306	8705631598	0.55	C
+1.17	0.233	12258608878	120	11026314256	472	1232294622	0.90	PartisanLeft
+0.96	0.206	10874937212	207	4825785244	2195	6049151968	0.44	PartisanRight
+1.36	0.089	4692861219	106	3826605550	588	866255669	0.82	SocialJustice
+0.97	0.170	8947621963	242	5128143167	1171	3819478796	0.57	AntiSJW
+1.14	0.119	6282829655	76	1238096328	2505	5044733327	0.20	Conspiracy
+0.81	0.006	299983263	44	189413159	108	110570104	0.63	Socialist
+1.13	0.012	640514991	44	385067794	227	255447197	0.60	AntiTheist
+1.00	0.004	229322949	32	99707507	90	129615442	0.43	WhiteIdentitarian
+"""
+
+# Views from 2017/08 to 2018/08 - Recfluence vs. New - Discovery + soft tag prediction correction
+python3 experiments/python/compare_yt_groups.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+	--recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+	--soft-tag-order YouTube,MainstreamMedia,L,R,C,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+	--soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+	--monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+	--start-views-dt 2017-08-01 --end-views-dt 2018-08-01
+"""
+1.06	0.582	20970107522	606	9420853546	5614	11549253976	0.45	YouTube
+1.11	0.408	14674531148	73	9079575381	735	5594955767	0.62	MainstreamMedia
+1.10	0.372	13403120350	213	9774549687	1089	3628570663	0.73	L
+0.94	0.302	10871686912	326	3544392714	3293	7327294198	0.33	R
+1.77	0.385	13876005094	164	6404871980	2148	7471133114	0.46	C
+1.17	0.239	8621076033	110	7610846852	418	1010229181	0.88	PartisanLeft
+0.96	0.203	7300350926	192	2454128499	1885	4846222427	0.34	PartisanRight
+1.36	0.095	3408915452	99	2710568672	528	698346780	0.80	SocialJustice
+0.97	0.141	5074834465	221	2553843455	989	2520991010	0.50	AntiSJW
+1.14	0.155	5590756648	75	726512196	2238	4864244452	0.13	Conspiracy
+0.81	0.005	172762424	39	79984880	90	92777544	0.46	Socialist
+1.13	0.013	460495692	43	275179726	213	185315966	0.60	AntiTheist
+1.00	0.005	181441230	31	92982269	78	88458961	0.51	WhiteIdentitarian
+"""

@@ -1,0 +1,98 @@
+
+#########################
+# STANDARD VECTOR PREDS #
+#########################
+
+# Getting predictions for recfluence channels
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/recfluence_vis_channel_stats_20200727.soft_tags.txt \
+        --score-chan-fp data/datasets/recfluence_political_channels_20200727.txt \
+        --out-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.txt \
+        --multi-lab True --use-gpu True
+python3 chan2vec/python/gen_pred_stats_multi_lab.py --lab-fp data/datasets/recfluence_vis_channel_stats_20200727.soft_tags.txt \
+        --score-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.txt \
+        --pred-thresh 0.5
+"""
+Number Instances: 758
+Max Label 646 YouTube
+Baseline: 0.852
+
+Precision Recall:
+646	0.946	0.955	YouTube
+351	0.866	0.957	R
+243	0.779	0.827	AntiSJW
+235	0.822	0.864	L
+209	0.757	0.804	PartisanRight
+171	0.633	0.404	C
+124	0.712	0.677	PartisanLeft
+107	0.708	0.589	SocialJustice
+80	0.693	0.762	MainstreamMedia
+78	0.889	0.821	Conspiracy
+73	0.711	0.808	MainstreamNews
+47	0.667	0.170	ReligiousConservative
+44	0.684	0.886	Socialist
+44	0.897	0.795	AntiTheist
+37	0.714	0.405	Libertarian
+36	0.333	0.056	MissingLinkMedia
+33	0.917	0.333	Educational
+32	0.688	0.688	WhiteIdentitarian
+31	0.714	0.323	StateFunded
+24	0.500	0.125	Provocateur
+18	0.900	0.500	MRA
+15	0.615	0.533	QAnon
+8	0.500	0.125	Revolutionary
+7	0.000	0.000	LateNightTalkShow
+4	0.000	0.000	Politician
+1	0.000	0.000	AntiWhiteness
+"""
+
+# Convert results
+python3 chan2vec/python/convert_multi_lab_to_tsv.py \
+	--multi-lab-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.txt \
+	--add-pred-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904/knn_lang_ps_t20_topics_raw_embed.comb.txt \
+	--out-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.filt_conv.txt
+
+# Getting agreement stats
+cut -f 1,3,4 data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.filt_conv.txt \
+    > data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.filt_conv.trim.txt
+python3 experiments/python/gen_agreement_stats.py \
+	--lab-fp data/datasets/recfluence_icc_tags_20200727.tsv \
+	--score-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_only.soft_tag_preds.filt_conv.trim.txt
+# Num insts / annotator agreement / model agreement / always predicting negative / best possible prediction
+"""
+733	0.830	0.850	0.670	0.916	AntiSJW
+638	0.812	0.840	0.713	0.906	PartisanRight
+393	0.856	0.872	0.823	0.928	PartisanLeft
+316	0.878	0.893	0.858	0.939	SocialJustice
+248	0.953	0.959	0.888	0.976	Conspiracy
+159	0.937	0.943	0.929	0.970	Libertarian
+155	0.910	0.939	0.930	0.955	Educational
+155	0.942	0.951	0.930	0.971	Socialist
+153	0.890	0.931	0.931	0.945	Provocateur
+148	0.927	0.934	0.933	0.964	ReligiousConservative
+142	0.970	0.975	0.936	0.985	AntiTheist
+119	0.954	0.946	0.946	0.977	MissingLinkMedia
+92	0.968	0.970	0.959	0.984	WhiteIdentitarian
+91	0.991	0.967	0.959	0.996	StateFunded
+60	0.977	0.981	0.973	0.989	MRA
+40	0.974	0.982	0.982	0.987	Revolutionary
+21	0.987	0.990	0.991	0.994	LateNightTalkShow
+12	0.992	0.995	0.995	0.996	AntiWhiteness
+"""
+
+# Getting predictions for out-of-sample channels
+cut -f 1 data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.txt \
+    > data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.chan_ids.txt 
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/recfluence_vis_channel_stats_20200727.soft_tags.txt \
+        --score-chan-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.chan_ids.txt \
+        --out-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.all_pol_pos_chans.soft_tag_preds.txt \
+        --multi-lab True --use-gpu True
+python3 chan2vec/python/convert_multi_lab_to_tsv.py \
+	--multi-lab-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.all_pol_pos_chans.soft_tag_preds.txt \
+	--add-pred-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.txt \
+	--out-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.all_pol_pos_chans.soft_tag_preds.filt_conv.txt

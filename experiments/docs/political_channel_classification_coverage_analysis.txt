@@ -1,0 +1,76 @@
+
+############################
+# ROUNDS COVERAGE INCREASE #
+############################
+
+# Get all final preds (and add in Recfluence with prob=1)
+cut -f 1 data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.out_of_sample_cands.orig_and_new_labs.knn_avg_preds.filt_pos.txt \
+    > data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.final_pos_pol_class_plus_recfluence.chan_ids.txt
+grep -P "\t1" data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt | cut -f 1 \
+    >> data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.final_pos_pol_class_plus_recfluence.chan_ids.txt
+
+# See how coverage increases over each round ...
+python3 experiments/python/gen_chan_classification_rounds_increase.py \
+	--chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+	--final-model-preds-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904.final_pos_pol_class_plus_recfluence.chan_ids.txt \
+	--rounds-fp data/pol_chan_disc/candidate_chans/initial_channels.txt,data/pol_chan_disc/candidate_chans/round1_channels.txt,data/pol_chan_disc/candidate_chans/round2_channels.txt,data/pol_chan_disc/candidate_chans/round3_channels.txt
+"""
+0	758	431550776	758	431550776
+1	6460	489726779	7218	921277555
+2	3198	115027796	10416	1036305351
+3	900	33284599	11316	1069589950
+"""
+
+
+###############################
+# CROSS VAL ROUND 0 DISCOVERY #
+###############################
+
+# Generate scripts / cross val sets
+python3 experiments/python/generate_channel_discovery_folds.py
+
+# Run scripts
+chmod 777 data/pol_chan_disc_cross_val/init_round/fold_*/gen_cands.sh
+sh chan_discovery_cross_val.sh 
+
+# Get metrics on channels that are held out
+python3 experiments/python/get_channel_discovery_folds_metrics.py
+"""
+High recall model -
+Total held out: 756
+Total found: 693
+Perc coverage: 0.917
+
+Final pred - 
+No preds: 0
+With >= 0.8: 651
+With >= 0.8 - held out coverage: 0.861
+
+Soft tag coverage - 
+645	604	0.936	575	0.891	YouTube
+351	339	0.966	336	0.957	R
+243	237	0.975	230	0.947	AntiSJW
+233	202	0.867	178	0.764	L
+209	205	0.981	205	0.981	PartisanRight
+171	151	0.883	136	0.795	C
+122	110	0.902	96	0.787	PartisanLeft
+106	94	0.887	83	0.783	SocialJustice
+79	65	0.823	57	0.722	MainstreamMedia
+78	74	0.949	71	0.910	Conspiracy
+73	59	0.808	54	0.740	MainstreamNews
+47	43	0.915	42	0.894	ReligiousConservative
+44	44	1.000	43	0.977	AntiTheist
+44	42	0.955	41	0.932	Socialist
+37	36	0.973	36	0.973	Libertarian
+36	27	0.750	20	0.556	MissingLinkMedia
+33	27	0.818	14	0.424	Educational
+32	32	1.000	32	1.000	WhiteIdentitarian
+31	27	0.871	26	0.839	StateFunded
+24	21	0.875	20	0.833	Provocateur
+18	17	0.944	17	0.944	MRA
+15	15	1.000	15	1.000	QAnon
+8	7	0.875	6	0.750	Revolutionary
+6	6	1.000	3	0.500	LateNightTalkShow
+4	4	1.000	3	0.750	Politician
+1	1	1.000	0	0.000	AntiWhiteness
+"""

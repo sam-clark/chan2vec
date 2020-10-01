@@ -1,0 +1,18 @@
+
+# Percent Traffic
+python3 experiments/python/compare_yt_group_trends.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+        --recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+        --soft-tag-order YouTube,MainstreamMedia,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+        --soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+        --monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+        --start-views-dt 2017-08-01 --use-traffic-perc
+
+# Overall Traffic
+python3 experiments/python/compare_yt_group_trends.py --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --soft-tags-fp data/pol_chan_class/soft_tag_scores/round3_channels_ds_20200904.recfluence_and_preds_soft_tags.txt \
+        --recfluence-fp data/datasets/recfluence_political_channels_20200727.txt \
+        --soft-tag-order YouTube,MainstreamMedia,PartisanLeft,PartisanRight,SocialJustice,AntiSJW,Conspiracy,Socialist,AntiTheist,WhiteIdentitarian \
+        --soft-pred-pr-fp data/datasets/soft_tag_pred_pr.txt --soft-tag-pol-class-rec-fp data/datasets/soft_tag_pol_pred_recall.txt \
+        --monthly-views-fp data/pol_chan_class/ensemble_scores/round3_channels_ds_20200904_recfluence_plus_pos_preds_pages.monthly_view_parse.txt \
+        --start-views-dt 2017-08-01 --use-traffic-perc True
