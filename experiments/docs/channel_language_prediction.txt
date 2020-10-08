@@ -14,6 +14,7 @@ python3 chan2vec/python/gen_pred_stats_bin.py \
         --no-fold-lab-col True --pred-thresh 0.5
 """
 Num instances: 16261
+Base Rate:     0.6297
 AUC:           0.9368
 Accuracy:      0.8678
 Precision:     0.8586

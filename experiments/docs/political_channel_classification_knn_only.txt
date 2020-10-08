@@ -169,6 +169,7 @@ python3 chan2vec/python/gen_pred_stats_bin.py \
         --no-fold-lab-col True --pred-thresh 0.8
 """
 Num instances: 1509
+Base Rate:     0.5010
 AUC:           0.9891
 Accuracy:      0.9457
 Precision:     0.9884
@@ -182,6 +183,7 @@ python3 chan2vec/python/gen_pred_stats_bin.py \
 	--no-fold-lab-col True --pred-thresh 0.8
 """
 Num instances: 6010
+Base Rate:     0.1258
 AUC:           0.9961
 Accuracy:      0.9859
 Precision:     0.9841
@@ -195,6 +197,7 @@ python3 chan2vec/python/gen_pred_stats_bin.py \
 	--no-fold-lab-col True --pred-thresh 0.8
 """
 Num instances: 98
+Base Rate:     0.3367
 AUC:           0.9462
 Accuracy:      0.8878
 Precision:     0.8235
@@ -256,6 +259,7 @@ python3 chan2vec/python/gen_pred_stats_bin.py \
 	--no-fold-lab-col True --pred-thresh 0.8
 """
 Num instances: 98
+Base Rate:     0.3367
 AUC:           0.9580
 Accuracy:      0.8980
 Precision:     0.8485
