@@ -166,3 +166,8 @@ python3 chan2vec/python/convert_multi_lab_to_tsv.py \
         --add-pred-fp data/site_preds/labels_20201006/pol_preds.knn_avg_lang_filt.pos_only.txt \
 	--regression-lcr-fp data/site_preds/labels_20201006/pol_lean.all_pol_preds.txt \
         --out-fp data/site_preds/labels_20201006/all_political_soft_tags_20201006.txt
+
+# Get top scatter plots
+python3 experiments/python/soft_tag_pair_scatter_plots.py PartisanRight AntiSJW ~/chan2vec/data/site_preds/labels_20201006/all_political_soft_tags_20201006.txt data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt
+
+python3 experiments/python/soft_tag_pair_scatter_plots.py PartisanLeft SocialJustice ~/chan2vec/data/site_preds/labels_20201006/all_political_soft_tags_20201006.txt data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt
