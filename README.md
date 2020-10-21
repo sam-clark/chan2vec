@@ -1,7 +1,7 @@
 # chan2vec
 
 The methods and experiment results are described in the following paper:
-https://arxiv.org/abs/2010.09892
+- https://arxiv.org/abs/2010.09892
 
 Directions for running experiments from the paper and generating the https://transparency.tube/ channel classifications data are below.
 
@@ -49,13 +49,12 @@ Experiment results can be found here:
 ## Transparency.tube Data
 
 The latest data was generated using commands in the following doc:
-experiments/docs/latest_site_data_20201006.txt
+- experiments/docs/latest_site_data_20201006.txt
 
 Tag definitions can be found here:
-https://github.com/markledwich2/Recfluence
+- https://github.com/markledwich2/Recfluence
 
 Tag metrics from hold-one-out cross validation:
-| --- | --- | --- | --- |
 | Tag | # Channels | Precision | Recall |
 | --- | --- | --- | --- |
 | AntiSJW | 271 | 0.786 | 0.827 | 
@@ -77,19 +76,17 @@ Tag metrics from hold-one-out cross validation:
 | MRA | 21 | 0.818 | 0.429 | 
 | LateNightTalkShow | 10 | 0.700 | 0.700 | 
 | Revolutionary | 9 | 0.500 | 0.111 | 
-| --- | --- | --- | --- |
 
 Political lean metrics from hold-one-out cross validation:
-| --- | --- | --- | --- |
 | Political Lean | # Channels | Precision | Recall |
 | --- | --- | --- | --- |
 | Left | 263 | 0.891 | 0.779 |
 | Center | 236 | 0.633 | 0.644 |
 | Right | 415 | 0.863 | 0.923 |
-| --- | --- | --- | --- |
+
 
 The predictions are available here:
-data/site_preds/labels_20201006/all_political_soft_tags_20201006.txt
+- data/site_preds/labels_20201006/all_political_soft_tags_20201006.txt
 
 Columns are:
 - Channel ID
