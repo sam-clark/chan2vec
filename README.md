@@ -1,5 +1,10 @@
 # chan2vec
 
+The methods and experiment results are described in the following paper:
+https://arxiv.org/abs/2010.09892
+
+Directions for running experiments from the paper and generating the https://transparency.tube/ channel classifications data are below.
+
 ## Political Channel Discovery
 
 Commands from the following docs were used for political channel discovery (some data of which is used in Dinkov experiments)
@@ -40,3 +45,54 @@ Experiment results and commands for scoring all out of sample are in this doc:
 Experiment results can be found here:
 - experiments/docs/political_soft_tags_traffic_analysis.txt
 - experiments/docs/political_soft_tags_traffic_analysis_trends.txt
+
+## Transparency.tube Data
+
+The latest data was generated using commands in the following doc:
+experiments/docs/latest_site_data_20201006.txt
+
+Tag definitions can be found here:
+https://github.com/markledwich2/Recfluence
+
+Tag metrics from hold-one-out cross validation:
+| --- | --- | --- | --- |
+| Tag | # Channels | Precision | Recall |
+| --- | --- | --- | --- |
+| AntiSJW | 271 | 0.786 | 0.827 | 
+| PartisanRight | 250 | 0.746 | 0.832 | 
+| PartisanLeft | 146 | 0.733 | 0.678 | 
+| SocialJustice | 141 | 0.770 | 0.617 | 
+| Conspiracy | 118 | 0.856 | 0.805 | 
+| MainstreamNews | 96 | 0.693 | 0.823 | 
+| ReligiousConservative | 69 | 0.696 | 0.232 | 
+| Socialist | 49 | 0.683 | 0.837 | 
+| AntiTheist | 47 | 0.857 | 0.766 | 
+| Educational | 44 | 0.909 | 0.227 | 
+| Libertarian | 41 | 0.739 | 0.415 | 
+| MissingLinkMedia | 39 | 0.286 | 0.051 | 
+| StateFunded | 39 | 0.850 | 0.436 | 
+| WhiteIdentitarian | 37 | 0.676 | 0.676 | 
+| QAnon | 34 | 0.784 | 0.853 | 
+| Provocateur | 21 | 0.500 | 0.143 | 
+| MRA | 21 | 0.818 | 0.429 | 
+| LateNightTalkShow | 10 | 0.700 | 0.700 | 
+| Revolutionary | 9 | 0.500 | 0.111 | 
+| --- | --- | --- | --- |
+
+Political lean metrics from hold-one-out cross validation:
+| --- | --- | --- | --- |
+| Political Lean | # Channels | Precision | Recall |
+| --- | --- | --- | --- |
+| Left | 263 | 0.891 | 0.779 |
+| Center | 236 | 0.633 | 0.644 |
+| Right | 415 | 0.863 | 0.923 |
+| --- | --- | --- | --- |
+
+The predictions are available here:
+data/site_preds/labels_20201006/all_political_soft_tags_20201006.txt
+
+Columns are:
+- Channel ID
+- Probability the channel is political (all over 0.8)
+- Soft tag or political lean
+- Probability of soft tag or political lean (use threshold of 0.5)
