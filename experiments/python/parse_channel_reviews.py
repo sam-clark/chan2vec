@@ -6,7 +6,7 @@ import pandas as pd
 
 def parse_chan_revs(chan_rev_fp, filt_reviewers, pol_class_fp, soft_tag_fp, pol_lean_fp,
                     pol_class_override_fp, override_soft_tags, override_reviewers,
-                    relevance_thresh=0.5):
+                    relevance_thresh=0.5, no_vids_fp=None):
     # Pol class overrides..
     pol_class_override_d = {}
     if pol_class_override_fp is not None:
@@ -18,6 +18,10 @@ def parse_chan_revs(chan_rev_fp, filt_reviewers, pol_class_fp, soft_tag_fp, pol_
     ov_st_revs_s = set(override_reviewers.split(","))
     # Filter out some reviwers (specifically model based ones)
     filt_reviewers_s = set(filt_reviewers.split(","))
+    # Filt out chans without vids
+    chan_no_vid_s = set({})
+    if no_vids_fp is not None:
+        chan_no_vid_s = set([l.strip() for l in open(no_vids_fp)])
     # Read in review data
     chan_rev_df = pd.read_csv(chan_rev_fp)
     chan_rel_d = collections.defaultdict(list)
@@ -28,6 +32,8 @@ def parse_chan_revs(chan_rev_fp, filt_reviewers, pol_class_fp, soft_tag_fp, pol_
     for rid, row in chan_rev_df.iterrows():
         rev_code = row["REVIEWER_CODE"]
         chan_id = row["CHANNEL_ID"]
+        if chan_id in chan_no_vid_s:
+            continue
         if rev_code in filt_reviewers_s:
             continue
         # Channel relevance
@@ -86,8 +92,9 @@ if __name__ == '__main__':
     parser.add_argument('--pol-class-fp')
     parser.add_argument('--soft-tag-fp')
     parser.add_argument('--pol-lean-fp')
+    parser.add_argument('--no-vids-fp', default=None)
     parser.add_argument('--relevance-thresh', type=float, default=0.5)
     args=parser.parse_args()
     parse_chan_revs(args.chan_rev_fp, args.filt_reviewers, args.pol_class_fp, args.soft_tag_fp, args.pol_lean_fp,
                     args.pol_class_override_fp, args.override_soft_tags, args.override_reviewers,
-                    relevance_thresh=args.relevance_thresh)
+                    relevance_thresh=args.relevance_thresh, no_vids_fp=args.no_vids_fp)

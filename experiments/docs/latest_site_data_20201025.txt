@@ -1,0 +1,170 @@
+
+#################
+# PARSE REVIEWS #
+#################
+
+# Get new labels (all tags from Mark, corrections, ...)
+python3 experiments/python/parse_channel_reviews.py \
+	--chan-rev-fp data/datasets/channel_review_20201025.csv --filt-reviewers sam \
+	--override-soft-tags Black,LGBT,QAnon --override-reviewers mar,scl \
+	--pol-class-override-fp data/datasets/temp_override_20200921.txt \
+	--no-vids-fp data/datasets/channel_review_no_vids_20201025.txt.tsv \
+	--pol-class-fp data/datasets/channel_review_20201025.pol_class_labs.txt \
+	--soft-tag-fp data/datasets/channel_review_20201025.soft_tags.txt \
+	--pol-lean-fp data/datasets/channel_review_20201025.pol_lean.txt
+
+############################
+# POLITICAL CLASSIFICATION #
+############################
+
+# Combine production political labels with new labels
+mkdir -p data/site_preds/labels_20201025/
+python3 experiments/python/combine_labels.py data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.txt \
+	data/datasets/channel_review_20201025.pol_class_labs.txt data/site_preds/labels_20201025/comb_labels.is_pol.txt
+
+# Make predictions for all Round 0-3 channels (including Recfluence channels)
+# Get all candidate channels
+cat data/pol_chan_disc/candidate_chans/initial_channels.txt data/pol_chan_disc/candidate_chans/round1_channels.txt data/pol_chan_disc/candidate_chans/round2_channels.txt \
+    data/pol_chan_disc/candidate_chans/round3_channels.txt > data/pol_chan_disc/candidate_chans/round0t3_channels.txt
+
+# Get 200 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/site_preds/labels_20201025/comb_labels.is_pol.txt \
+        --score-chan-fp data/pol_chan_disc/candidate_chans/round0t3_channels.txt \
+        --out-fp data/site_preds/labels_20201025/pol_preds.knn_200d.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Get 16 dimension preds
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors_16d.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/site_preds/labels_20201025/comb_labels.is_pol.txt \
+        --score-chan-fp data/pol_chan_disc/candidate_chans/round0t3_channels.txt \
+        --out-fp data/site_preds/labels_20201025/pol_preds.knn_16d.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True
+
+# Averaging preds and filtering by language
+python3 chan2vec/python/combine_knn_filt_lang.py \
+        --knn-pred-fps data/site_preds/labels_20201025/pol_preds.knn_200d.txt,data/site_preds/labels_20201025/pol_preds.knn_16d.txt \
+        --lang-pred-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --out-fp data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.txt
+
+# Filter out topic chans, chans with <20 scrap subs, and chans with <0.8 political prob (language already handled)
+python3 experiments/python/filter_pol_class.py \
+        --pol-class-fp data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --lang-class-fp data/pol_chan_class/chan2vec_knn_scores/r3_ds_20200904/chan2vec_round3_channels_ds.pol_class_lab.is_english_preds.txt \
+        --out-fp data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.pos_only.txt \
+        --lang-thresh 0.5 --pol-thresh 0.8 --min-scrap-subs 20
+
+
+##################
+# POLITICAL LEAN #
+##################
+
+# Get predictions on the training set
+cut -f 1 data/datasets/channel_review_20201025.pol_lean.txt > data/datasets/channel_review_20201025.pol_lean.chan_ids.txt
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/channel_review_20201025.pol_lean.txt \
+        --score-chan-fp data/datasets/channel_review_20201025.pol_lean.chan_ids.txt \
+        --out-fp data/site_preds/labels_20201025/pol_lean.train_ds_preds.txt \
+        --num-neighbs 10 --use-gpu True --regression True
+python3 chan2vec/python/gen_pred_stats.py --lab-fp data/datasets/channel_review_20201025.pol_lean.txt \
+        --score-fp data/site_preds/labels_20201025/pol_lean.train_ds_preds.txt --regression-round True
+"""
+Number Instances: 1058
+Max Label 523 1
+Baseline: 0.494
+Accuracy: 0.822
+
+Precision Recall:
+523	0.885	0.931	1
+281	0.880	0.783	-1
+254	0.632	0.642	0
+"""
+
+# Get predictions for all political channels
+cut -f 1 data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.pos_only.txt > data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.pos_only.chan_ids.txt
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/channel_review_20201025.pol_lean.txt \
+        --score-chan-fp data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.pos_only.chan_ids.txt \
+        --out-fp data/site_preds/labels_20201025/pol_lean.all_pol_preds.txt \
+        --num-neighbs 10 --use-gpu True --regression True
+
+
+########################
+# SOFT TAG PREDICTIONS #
+########################
+
+# Get predictions for the training set
+cut -f 1 data/datasets/channel_review_20201025.soft_tags.txt | sort | uniq > data/datasets/channel_review_20201025.soft_tags.chan_ids.txt
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/channel_review_20201025.soft_tags.txt \
+        --score-chan-fp data/datasets/channel_review_20201025.soft_tags.chan_ids.txt \
+        --out-fp data/site_preds/labels_20201025/soft_tags.train_ds_preds.txt \
+        --multi-lab True --use-gpu True
+python3 chan2vec/python/gen_pred_stats_multi_lab.py --lab-fp data/datasets/channel_review_20201025.soft_tags.txt \
+        --score-fp data/site_preds/labels_20201025/soft_tags.train_ds_preds.txt --pred-thresh 0.5
+"""
+Number Instances: 1058
+Max Label 523 R
+Baseline: 0.494
+
+Precision Recall:
+523	0.853	0.952	R
+313	0.723	0.850	PartisanRight
+299	0.770	0.796	AntiSJW
+281	0.810	0.819	L
+254	0.648	0.421	C
+167	0.871	0.850	Conspiracy
+155	0.748	0.710	PartisanLeft
+149	0.711	0.577	SocialJustice
+107	0.696	0.813	MainstreamNews
+75	0.607	0.227	ReligiousConservative
+71	0.783	0.915	QAnon
+68	0.695	0.838	WhiteIdentitarian
+54	0.774	0.444	Libertarian
+53	0.646	0.792	Socialist
+51	0.844	0.745	AntiTheist
+47	0.846	0.234	Educational
+40	0.333	0.050	MissingLinkMedia
+40	0.783	0.450	StateFunded
+23	0.818	0.391	MRA
+20	0.250	0.050	Provocateur
+11	0.800	0.727	LateNightTalkShow
+9	0.500	0.111	Revolutionary
+"""
+
+# Get predictions for all political channels
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/channel_review_20201025.soft_tags.txt \
+        --score-chan-fp data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.pos_only.chan_ids.txt \
+        --out-fp data/site_preds/labels_20201025/soft_tags.all_pols_preds.txt \
+        --multi-lab True --use-gpu True
+
+
+
+#######################
+# COMBINE PREDICTIONS #
+#######################
+
+# Add in L/C/R
+python3 chan2vec/python/convert_multi_lab_to_tsv.py \
+        --multi-lab-fp data/site_preds/labels_20201025/soft_tags.all_pols_preds.txt \
+        --add-pred-fp data/site_preds/labels_20201025/pol_preds.knn_avg_lang_filt.pos_only.txt \
+	--regression-lcr-fp data/site_preds/labels_20201025/pol_lean.all_pol_preds.txt \
+        --out-fp data/site_preds/labels_20201025/all_political_soft_tags_20201025.txt
+
+# Get tag diff
+python3 experiments/python/get_tag_diff.py QAnon ~/Downloads/all_political_soft_tags_20201006.txt ~/Downloads/all_political_soft_tags_20201025.txt > ~/Downloads/all_political_soft_tags_20201025_qanon_diff.txt
+python3 experiments/python/get_tag_diff.py WhiteIdentitarian ~/Downloads/all_political_soft_tags_20201006.txt ~/Downloads/all_political_soft_tags_20201025.txt > ~/Downloads/all_political_soft_tags_20201025_whiteid_diff.txt
