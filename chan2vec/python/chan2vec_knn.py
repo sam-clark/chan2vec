@@ -75,11 +75,11 @@ def score_file_faiss(vec_fp, chan_info_fp, lab_fp, score_chan_fp, out_fp, num_ne
         chan_id = aid_chan_d_q[i]
         found = 0
         neighb_lab_d = collections.defaultdict(float)
-        neighb_chan_id_s = set([])
+        neighb_chan_id_l = []
         for aid_neighb, cos_sim in zip(I[i], D[i]):
             neighb_chan_id = aid_chan_d_lab[aid_neighb]
             if chan_id == neighb_chan_id: continue
-            neighb_chan_id_s.add(neighb_chan_id)
+            neighb_chan_id_l.append(neighb_chan_id + "|" + str(cos_sim))
             weight = 1
             if weight_neighbs:
                 weight = (1 / np.exp(1 - cos_sim))
@@ -120,7 +120,7 @@ def score_file_faiss(vec_fp, chan_info_fp, lab_fp, score_chan_fp, out_fp, num_ne
                 info_cols_l = [all_sims_str]
             # Top sim IDs (if specificied)
             if output_sims:
-                neighb_chan_id_str = "|".join(neighb_chan_id_s)
+                neighb_chan_id_str = ",".join(neighb_chan_id_l)
                 info_cols_l.append(neighb_chan_id_str)
             of.write("\t".join([chan_id] + info_cols_l) + "\n")
     of.close()

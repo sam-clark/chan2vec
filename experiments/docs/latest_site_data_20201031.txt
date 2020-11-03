@@ -59,6 +59,37 @@ python3 experiments/python/filter_pol_class.py \
         --out-fp data/site_preds/labels_20201031/pol_preds.knn_avg_lang_filt.pos_only.txt \
         --lang-thresh 0.5 --pol-thresh 0.8 --min-scrap-subs 20
 
+# Check borderline cases
+grep -P "\t0.75" data/site_preds/labels_20201031/pol_preds.knn_avg_lang_filt.txt | cut -f 1 > data/site_preds/labels_20201031/pol_preds.knn_avg_lang_filt.pred75.txt
+
+
+########################
+# RAW SIM CHANNEL DATA #
+########################
+
+# Get all labeled and positive pred chans
+grep -P "\t1" data/site_preds/labels_20201031/comb_labels.is_pol.txt > data/site_preds/labels_20201031/comb_labels.is_pol.pos_only.txt
+cat data/site_preds/labels_20201031/pol_preds.knn_avg_lang_filt.pos_only.txt data/site_preds/labels_20201031/comb_labels.is_pol.pos_only.txt | cut -f 1 | sort | uniq \
+    > data/site_preds/labels_20201031/pol_pred_lab_pos.chan_ids.txt
+
+# Get sims 200 dimension - labeled
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/site_preds/labels_20201031/comb_labels.is_pol.pos_only.txt \
+        --score-chan-fp data/site_preds/labels_20201031/pol_pred_lab_pos.chan_ids.txt \
+        --out-fp data/site_preds/labels_20201031/pol_pred_lab_pos.200d_sims.pos.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True --output-sims True
+
+# Get sims 200 dimension - unlabeled
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/site_preds/labels_20201031/pol_pred_nolab_fakelabs.txt \
+        --score-chan-fp data/site_preds/labels_20201031/pol_pred_lab_pos.chan_ids.txt \
+        --out-fp data/site_preds/labels_20201031/pol_pred_lab_pos.200d_sims.unlab.txt \
+        --num-neighbs 10 --use-gpu True --bin-prob True --output-sims True
+
 
 ##################
 # POLITICAL LEAN #
