@@ -3,7 +3,9 @@
 The methods and experiment results are described in the following paper:
 - https://arxiv.org/abs/2010.09892
 
-Directions for running experiments from the paper and generating the https://transparency.tube/ channel classifications data are below.
+Directions for running experiments from the paper and generating the https://transparency.tube/ channel classifications data are [here](# transparencytube-data)
+
+Directions for doing basic classification with pre-existing embeddings can be found [here](# chan2vec-knn-basic-example)
 
 ## Political Channel Discovery
 
@@ -93,3 +95,37 @@ Columns are:
 - Probability the channel is political (all over 0.8)
 - Soft tag or political lean
 - Probability of soft tag or political lean (use threshold of 0.5)
+
+## Chan2vec KNN Basic Example
+
+Install numpy and faiss
+```
+pip3 install faiss numpy
+```
+
+Download pre-existing emebddings (can reach out to the chan2vec author for these) and add to the specified locations below. Add "--use-gpu True" in order to speed up the command below, otherwise will take > 3 mins.
+```
+python3 chan2vec/python/chan2vec_knn.py \
+        --vec-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.vectors.txt \
+        --chan-info-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.txt \
+        --label-fp data/datasets/tt_ds_20201031.is_pol.txt \
+        --score-chan-fp data/pol_chan_disc/chan2vec_training_data/chan2vec_round3_channels_ds.chan_info.channel_ids.txt \
+        --out-fp ./all_political_predictions.txt \
+        --num-neighbs 10 --bin-prob True
+```
+
+Get performance of model
+```
+python3 chan2vec/python/gen_pred_stats_bin.py \
+        --lab-fp data/datasets/tt_ds_20201031.is_pol.txt \
+        --score-fp ./all_political_predictions.txt \
+        --no-fold-lab-col True --pred-thresh 0.5
+```
+Output:
+```
+Num instances: 6615
+AUC:           0.9906
+Accuracy:      0.9587
+Precision:     0.8153
+Recall:        0.9708
+```
