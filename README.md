@@ -3,9 +3,9 @@
 The methods and experiment results are described in the following paper:
 - https://arxiv.org/abs/2010.09892
 
-Directions for running experiments from the paper and generating the https://transparency.tube/ channel classifications data are [here](# transparencytube-data)
+Directions for running experiments from the paper and generating the https://transparency.tube/ channel classifications data are [here](#transparencytube-data).
 
-Directions for doing basic classification with pre-existing embeddings can be found [here](# chan2vec-knn-basic-example)
+Directions for doing basic classification with pre-existing embeddings can be found [here](#chan2vec-knn-basic-example).
 
 ## Political Channel Discovery
 
@@ -129,3 +129,12 @@ Accuracy:      0.9587
 Precision:     0.8153
 Recall:        0.9708
 ```
+
+The columns for chan-info-fp are:
+- Channel ID
+- Assigned int for channel ID
+- Channel Name
+- Scraped comment subscriptions
+- Total subscriptions
+
+The larger the number of "scraped comment subscriptions", the more useful the channel embedding is likely to be for a given task. For political channel classification we filter out all channels with less than 20 "scraped comment subscriptions.
