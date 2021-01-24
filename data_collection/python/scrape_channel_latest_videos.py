@@ -32,8 +32,8 @@ def age_conv(age_raw):
 
 def parse_videos(html):
     try:
-        page_info_str = [l for l in html.split("\n") if 'window["ytInitialData"] = ' in l][0]
-        page_info_str = page_info_str.replace('window["ytInitialData"] = ', '').strip().rstrip(';')
+        page_info_str = [l for l in html.split("\n") if 'ytInitialData = ' in l][0]
+        page_info_str = page_info_str.split('ytInitialData = ')[1].split("</script>")[0].rstrip(';')
         page_info_d = json.loads(page_info_str)
         vid_l = []
         for tab_d in page_info_d['contents']['twoColumnBrowseResultsRenderer']['tabs']:

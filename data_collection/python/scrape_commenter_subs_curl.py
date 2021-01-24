@@ -34,8 +34,8 @@ def scrape_subscriptions(html):
         sub_l.append((chan_id, chan_name, str(sub_c)))
     """
     try:
-        page_info_str = [l for l in html.split("\n") if 'window["ytInitialData"] = ' in l][0]
-        page_info_str = page_info_str.replace('window["ytInitialData"] = ', '').strip().rstrip(';')
+        page_info_str = [l for l in html.split("\n") if 'ytInitialData = ' in l][0]
+        page_info_str = page_info_str.split('ytInitialData = ')[1].split("</script>")[0].rstrip(';')
         page_info_d = json.loads(page_info_str)
         sub_chan_l = []
         for tab_d in page_info_d['contents']['twoColumnBrowseResultsRenderer']['tabs']:
@@ -59,7 +59,8 @@ def scrape_subscriptions(html):
         except:
             videos_c = -1
         try:
-            subs_c_raw = sub_chan_d['gridChannelRenderer']["subscriberCountText"]["runs"][0]["text"]
+            #subs_c_raw = sub_chan_d['gridChannelRenderer']["subscriberCountText"]["runs"][0]["text"]
+            subs_c_raw = sub_chan_d['gridChannelRenderer']["subscriberCountText"]["simpleText"]
             subs_c = int(expand_num(subs_c_raw.replace(" subscribers", "")))
         except:
             subs_c = -1
